@@ -7,12 +7,6 @@ import random as rd
 
 #%% Notes
 """
-Ring numbers for moves:
-    0(1(2(3(4)3)2)1)0
-    0 is out of bounds
-taken into account in send data to act like this:
-    (0(1(2(3)2)1)0)
-
 Moves encoded after testing:
 
         |Move        
