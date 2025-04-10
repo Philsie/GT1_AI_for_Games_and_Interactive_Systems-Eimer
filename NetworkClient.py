@@ -5,6 +5,31 @@ import io
 import config
 import random as rd
 
+#%% Notes
+"""
+Ring numbers for moves:
+    0(1(2(3(4)3)2)1)0
+    0 is out of bounds
+taken into account in send data to act like this:
+    (0(1(2(3)2)1)0)
+
+Moves encoded after testing:
+
+        |Move        
+Send    |From   |To     |Note
+5       |3      |2      |Illegal (Server States -3 to -2)
+6       |2      |1      |Works (Server States -2 to -1)
+7       |1      |0      |Works (Server States -1 to 0)
+8       |0      |1      |Works
+9       |1      |2      |Works
+10      |2      |3      |Works
+
+
+
+
+
+"""
+#%% Code
 class Move:
     def __init__(self, player, first, second):
         self.player = player
@@ -43,15 +68,28 @@ def connect_to_server(hostname, port, team_name, logo_path):
     print(f"Player number: {player_number}, Time limit: {time_limit}")
     return s, player_number, time_limit
 
-def send_move(s, move):
+def send_move(s,start,end):
     """Sends a move as a sequence of bytes over a socket, preserving leading zeros."""
     #m = str(move.player) + str(move.first + 8) + str(mosecond + 8) 
-    m = ((move.first))+(move.second+8)
-    m_bytes = bytes([m])
-    print(move, m, m_bytes)
+    
+    print("start",start,"\nend",end)
 
-    print(f"Sending bytes: {m_bytes}")
-    s.sendall(m_bytes)
+    MoveLUT = [
+    [None, 8   , None, None], # From 0
+    [7   , None, 9   , None], # From 1
+    [None, 6   , None, 10  ], # From 2
+    [None, None, None, None]  # From 3
+    ] 
+
+    move = MoveLUT[start][end]
+
+    print(move,bytes([move]))
+    if move != None:
+        move_bytes = bytes([MoveLUT[start][end]])
+        s.sendall(move_bytes)
+        return True
+    else:
+        return False
 
 
 def receive_move(s):
@@ -59,26 +97,26 @@ def receive_move(s):
     #207 --> invalid
     #208 --> to late
     #needs manual int slicing
-
-   
-    player = s.recv(1)[0]
-    print("receive_move:player -->",player)
+    recieved = s.recv(1)[0]    
     
-    if player == 201: # Your Turn
+    if recieved == 201: # Your Turn
         return True
-    elif player == 207: # Invalid Turn
+    elif recieved == 207: # Invalid Turn
         return False
-    elif player == 208: # Timed Out
+    elif recieved == 208: # Timed Out
         return False
     else:
-        print(player)
-        player_data = [int(str(player)[i]) for i in range(len(str(player)))]
+        return "Fallback"
+        print("recieved ",recieved)
+        player_data = [int(str(recieved)[i]) for i in range(len(str(recieved)))]
+        print(player_data)
         first = player_data[1]-8
         second = player_data[2]-8
         return Move(player_data[0], first, second)
 
 # Example usage:
 if __name__ == "__main__":
+    print("\n"*25) # Temp console clear for testing
     conf = config.get_config()
     s, player_number, time_limit = connect_to_server(conf["server_host"], conf["server_port"], conf["team_name"], conf["logo_path"])
     #input()
@@ -88,9 +126,8 @@ if __name__ == "__main__":
         match update:
             case True:
                 print("Movin")
-                send_move(s,Move(player_number,1,1))
-                #input("Presskey to continue")
-                send_move(s,Move(player_number,1,-1))
+                send_move(s,1,2)
+                send_move(s,2,3)
             case False:
                 print("Error")
             case _:
