@@ -24,10 +24,6 @@ Send    |From   |To     |Note
 9       |1      |2      |Works
 10      |2      |3      |Works
 
-
-
-
-
 """
 #%% Code
 class Move:
@@ -69,10 +65,7 @@ def connect_to_server(hostname, port, team_name, logo_path):
     return s, player_number, time_limit
 
 def send_move(s,start,end):
-    """Sends a move as a sequence of bytes over a socket, preserving leading zeros."""
-    #m = str(move.player) + str(move.first + 8) + str(mosecond + 8) 
-    
-    print("start",start,"\nend",end)
+    """Sends a move as a sequence of bytes over a socket, preserving leading zeros."""    
 
     MoveLUT = [
     [None, 8   , None, None], # From 0
@@ -82,8 +75,6 @@ def send_move(s,start,end):
     ] 
 
     move = MoveLUT[start][end]
-
-    print(move,bytes([move]))
     if move != None:
         move_bytes = bytes([MoveLUT[start][end]])
         s.sendall(move_bytes)
@@ -93,10 +84,10 @@ def send_move(s,start,end):
 
 
 def receive_move(s):
-    #201 --> dran
+    #201 --> your turn
     #207 --> invalid
     #208 --> to late
-    #needs manual int slicing
+    #else ... might follow example in send moves
     recieved = s.recv(1)[0]    
     
     if recieved == 201: # Your Turn
@@ -107,12 +98,7 @@ def receive_move(s):
         return False
     else:
         return "Fallback"
-        print("recieved ",recieved)
-        player_data = [int(str(recieved)[i]) for i in range(len(str(recieved)))]
-        print(player_data)
-        first = player_data[1]-8
-        second = player_data[2]-8
-        return Move(player_data[0], first, second)
+        # WIP
 
 # Example usage:
 if __name__ == "__main__":
